@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>오늘의 운세 - ENTJ</title>
+    <link rel="stylesheet" href="/u/tests/assets/css/main.css?20251010120000">
+    <style>
+        /* Custom styles are now handled by main.css through .info-card */
+        .card-title .icon {
+            display: inline-block;
+            margin-right: 0.5em;
+            font-style: normal;
+        }
+    </style>
+</head>
+<body>
+    <header class="main-nav">
+        <a href="/u/tests/" class="logo">ENTJ.KR Tests</a>
+        <div class="nav-right-section">
+            <nav class="nav-links" id="nav-links"></nav>
+            <button id="theme-switcher" class="theme-switcher">🌙</button>
+            <button id="hamburger" class="hamburger">☰</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>오늘의 ENTJ 운세</h1>
+        <div id="fortuneContent">
+            <div class="card info-card">
+                <div class="card-title"><span class="icon">💡</span> 오늘의 조언</div>
+                <p id="adviceDisplay">조언을 불러오는 중...</p>
+            </div>
+            <div class="card info-card">
+                <div class="card-title"><span class="icon">📝</span> 오늘의 과제</div>
+                <p id="taskDisplay">과제를 불러오는 중...</p>
+            </div>
+            <div class="card info-card">
+                <div class="card-title"><span class="icon">📈</span> ENTJ 지수</div>
+                <p id="mbtiIndexDisplay">ENTJ 지수를 불러오는 중...</p>
+            </div>
+            <div class="card info-card">
+                <div class="card-title"><span class="icon">🔑</span> 행운의 키워드</div>
+                <p id="keywordDisplay">키워드를 불러오는 중...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/u/tests/assets/js/main.js?20251010170000" defer></script>
+    <script src="/u/tests/assets/js/dynamic-menu.js?20251010170000" defer></script>
+    <script>
+    function getDailySeed() {
+        const today = new Date();
+        return today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+    }
+
+    function mulberry32(seed) {
+        return function() {
+            seed |= 0;
+            seed = seed + 0x6D2B79F5 | 0;
+            let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+            t = t + Math.imul(t ^ t >>> 7, 61 | t) | 0;
+            return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        }
+    }
+
+    /**
+     * 한국어 조사(e.g., 은/는, 을/를)를 앞 단어의 받침 유무에 따라 올바르게 선택하는 함수
+     * @param {string} text - 조사가 붙을 단어
+     * @param {string} particle - '/'로 구분된 조사 쌍 (예: "을/를")
+     * @returns {string} - 선택된 조사
+     */
+    function josa(text, particle) {
+        const particles = particle.split('/');
+        if (particles.length < 2) return particle;
+
+        if (typeof text !== 'string' || text.length === 0) return particles[1];
+        const lastChar = text[text.length - 1];
+        const charCode = lastChar.charCodeAt(0);
+
+        // 한글 (가-힣) 범위 체크
+        if (charCode < 0xAC00 || charCode > 0xD7A3) {
+            // 한글이 아니면 기본값(받침 없는 경우) 반환
+            return particles[1];
+        }
+
+        const hasBatchim = (charCode - 0xAC00) % 28 > 0;
+        return hasBatchim ? particles[0] : particles[1];
+    }
+
+    // --- Enhanced Generative Data Parts ---
+    const data = {
+        advice: {
+            openings: ["오늘은", "오늘 당신의", "지금은", "오늘은 특별히"],
+            subjects: ["타고난 리더십이", "날카로운 전략적 사고가", "강력한 추진력이", "명확한 비전이", "효율적인 문제 해결 능력이", "카리스마 넘치는 통솔력이"],
+            verbs: ["빛을 발하는 날입니다.", "새로운 기회를 창출할 것입니다.", "목표 달성에 결정적인 역할을 합니다.", "주변에 긍정적인 영향을 줄 것입니다.", "당신을 더욱 성장시킬 것입니다."],
+            connectors: ["따라서", "그러니", "이 기회를 빌어", "망설이지 말고"],
+            actions: ["다른 사람의 감정에 귀 기울이고 공감하는 연습을 해보세요.", "타인의 의견을 존중하고 경청하는 자세를 가지세요.", "계획에 유연성을 더해 다양한 시각을 받아들이세요.", "자신뿐만 아니라 주변의 기여도 인정하는 마음을 가지세요.", "업무 외적인 부분에서도 여유를 가지고 즐겨보세요.", "인간관계를 넓히고 네트워킹에 힘써보세요."]
+        },
+        task: {
+            types: ["통솔하기:", "전략 세우기:", "개선하기:", "도전하기:"],
+            actions: ["오랫동안 정체된", "비효율적인", "새로운 접근이 필요한", "아직 해결되지 않은"],
+            subjects: ["팀 프로젝트", "업무 프로세스", "개인적인 목표", "복잡한 문제", "미래 계획", "리더십 기술"],
+            verbs: ["을(를) 성공적으로 통솔해 보세요.", "을(를) 위한 전략을 수립해 보세요.", "을(를) 효율적으로 개선해 보세요.", "에 과감하게 도전해 보세요.", "을(를) 명확하게 정의해 보세요."]
+        },
+        mbtiIndex: {
+            reasons: ["타고난 리더십과 전략적 사고가 발휘되어", "논리적이고 객관적인 판단력이 빛을 발하여", "강력한 결단력과 추진력으로 목표를 향해 나아가", "끊임없이 배우고 도전하며 성장하고자 하는 욕구로", "비효율성을 빠르게 파악하고 해결책을 제시하여"],
+            results: ["주변을 성공적으로 이끌 수 있습니다.", "어떤 난관도 극복할 수 있는 힘을 얻습니다.", "지적인 만족감과 성취감을 만끽할 수 있습니다.", "새로운 시스템과 질서를 구축할 수 있습니다."]
+        },
+        keywords: ["리더십", "전략적", "효율성", "솔직함", "논리적", "결단력", "계획적", "강인한", "객관적", "도전적", "통솔력", "자신감", "추진력", "분석적", "통찰력", "지적", "냉철함", "완벽주의", "목표지향", "자기계발"]
+    };
+
+    // --- Generator Functions ---
+    function generateAdvice(randFn, parts) {
+        const pick = (arr) => arr[Math.floor(randFn() * arr.length)];
+        
+        const structureType = randFn();
+        if (structureType < 0.4) {
+            // Structure 1: Subject + Verb
+            return `${pick(parts.subjects)} ${pick(parts.verbs)}`;
+        } else if (structureType < 0.8) {
+            // Structure 2: Opening + Subject + Verb
+            return `${pick(parts.openings)} ${pick(parts.subjects)} ${pick(parts.verbs)}`;
+        } else {
+            // Structure 3: Full Sentence
+            return `${pick(parts.openings)} ${pick(parts.subjects)} ${pick(parts.verbs)} ${pick(parts.connectors)} ${pick(parts.actions)}`;
+        }
+    }
+
+    function generateTask(randFn, parts) {
+        const pick = (arr) => arr[Math.floor(randFn() * arr.length)];
+        
+        const type = pick(parts.types);
+        const action = pick(parts.actions);
+        const subject = pick(parts.subjects);
+        const verb = pick(parts.verbs);
+
+        // 문장 조합: action + subject + verb
+        let rawSentence = `${action} ${subject}${verb}`;
+
+        // 조사 처리
+        rawSentence = rawSentence
+            .replace("을(를)", josa(subject, "을/를"))
+            .replace("은(는)", josa(subject, "은/는"))
+            .replace("이(가)", josa(subject, "이/가"))
+            .replace("과/와", josa(subject, "과/와"));
+
+        return `${type} ${rawSentence}`;
+    }
+
+    function generateMbtiIndex(randFn, parts) {
+        const pick = (arr) => arr[Math.floor(randFn() * arr.length)];
+        const percentage = 65 + Math.floor(randFn() * 31); // 65% to 95%
+        return `${percentage}% - ${pick(parts.reasons)} ${pick(parts.results)}`;
+    }
+
+    function generateKeywords(randFn, keywords, count) {
+        const shuffled = [...keywords].sort(() => randFn() - 0.5);
+        return shuffled.slice(0, count).map(k => `#${k}`).join(" ");
+    }
+
+    // --- Main Execution ---
+    window.onload = function() {
+        try {
+            const seed = getDailySeed();
+            const randFn = mulberry32(seed);
+
+            document.getElementById('adviceDisplay').innerText = generateAdvice(randFn, data.advice);
+            document.getElementById('taskDisplay').innerText = generateTask(randFn, data.task);
+            document.getElementById('mbtiIndexDisplay').innerText = generateMbtiIndex(randFn, data.mbtiIndex);
+            document.getElementById('keywordDisplay').innerText = generateKeywords(randFn, data.keywords, 5);
+        } catch (e) {
+            console.error("오늘의 운세 생성 중 오류 발생:", e);
+            document.getElementById('adviceDisplay').innerText = "콘텐츠를 불러오는 데 실패했습니다. 페이지를 새로고침해 주세요.";
+        }
+    };
+</script>
+</body>
+</html>
