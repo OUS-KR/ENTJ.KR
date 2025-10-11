@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>오늘의 게임 - ENTJ</title>
+    <link rel="stylesheet" href="/u/tests/assets/css/main.css?20251011000000">
+    <style>
+        .game-card-content {
+            text-align: center;
+        }
+        .game-area {
+            margin-top: 1.5em;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .game-display {
+            margin-bottom: 1em;
+            color: var(--text-color);
+        }
+        .game-display.question {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .choices {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8em;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .choice-btn {
+            padding: 0.8em 1em;
+            font-size: 1em;
+            background-color: var(--primary-color);
+            color: var(--text-color-inverted);
+            border: 1px solid var(--primary-color-dark);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%;
+        }
+        .choice-btn:hover {
+            background-color: var(--primary-color-dark);
+        }
+        .game-input {
+            margin-top: 1.5em;
+            margin-bottom: 1em;
+        }
+        .game-input input[type="text"], .game-input input[type="number"] {
+            padding: 0.5em;
+            font-size: 1.2em;
+            width: 150px;
+            border: 2px solid var(--border-color, #ccc);
+            border-radius: 4px;
+            background-color: var(--input-bg-color);
+            color: var(--text-color);
+            text-align: center;
+        }
+        .game-input button {
+            padding: 0.6em 1.5em;
+            font-size: 1.1em;
+            background-color: #007bff;
+            color: white;
+            border: 1px solid #0069d9;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-left: 0.5em;
+        }
+        .game-input button:hover {
+            background-color: #0069d9;
+        }
+        .feedback-message {
+            margin-top: 1em;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .feedback-message.correct {
+            color: var(--success-color);
+        }
+        .feedback-message.incorrect {
+            color: var(--error-color);
+        }
+    </style>
+</head>
+<body>
+    <header class="main-nav">
+        <a href="/u/tests/" class="logo">ENTJ.KR Tests</a>
+        <div class="nav-right-section">
+            <nav class="nav-links" id="nav-links"></nav>
+            <button id="theme-switcher" class="theme-switcher">🌙</button>
+            <button id="hamburger" class="hamburger">☰</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>오늘의 ENTJ 게임</h1>
+        <div class="card info-card game-card-content">
+            <div id="game-info">
+                <div id="gameTitle" class="card-title"></div>
+                <p id="gameDescription">게임을 불러오는 중...</p>
+            </div>
+            <div id="gameArea" class="game-area">
+                <!-- Game content will be loaded here by JavaScript -->
+            </div>
+            <div id="game-input-area">
+                <!-- Game input will be loaded here by JavaScript -->
+            </div>
+            <p id="feedbackMessage" class="feedback-message"></p>
+        </div>
+    </div>
+
+    <script src="/u/tests/assets/js/main.js?20251011000000" defer></script>
+    <script src="/u/tests/assets/js/dynamic-menu.js" defer></script>
+    <script>
+    function getDailySeed() {
+        const today = new Date();
+        return today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+    }
+
+    function mulberry32(seed) {
+        return function() {
+            seed |= 0;
+            seed = seed + 0x6D2B79F5 | 0;
+            let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+            t = t + Math.imul(t ^ t >>> 7, 61 | t) | 0;
+            return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        }
+    }
+
+    let currentCorrectAnswer = null;
+    let currentRandFn = null;
+    let gameInProgress = false;
+
+    // --- Game Implementations for ENTJ ---
+
+    // Game 0: Optimization Puzzle
+    function setupOptimizationPuzzle() {
+        document.getElementById('gameTitle').innerText = "오늘의 게임: 최적화 퍼즐";
+        const gameArea = document.getElementById('gameArea');
+        const puzzles = [
+            { q: "에너지 10으로 액션 A(비용 3, 점수 5)와 액션 B(비용 4, 점수 7)를 조합하여 얻을 수 있는 최대 점수는?", a: 17 }, // A*2 + B*1 = 6+4=10, 10+7=17
+            { q: "시간 12일 동안 프로젝트 A(기간 5일, 수익 8)와 프로젝트 B(기간 3일, 수익 4)를 조합하여 얻을 수 있는 최대 수익은?", a: 16 } // B*4 = 12일, 16수익
+        ];
+        const puzzle = puzzles[Math.floor(currentRandFn() * puzzles.length)];
+        currentCorrectAnswer = puzzle.a;
+        gameArea.innerHTML = `<div class="game-display question">${puzzle.q}</div>`;
+        document.getElementById('game-input-area').innerHTML = `
+            <div class="game-input">
+                <input type="number" id="userAnswer" placeholder="최대값 입력">
+                <button id="submitAnswer">제출</button>
+            </div>
+        `;
+        gameInProgress = true;
+    }
+
+    // Game 1: Decision Matrix
+    function setupDecisionMatrixGame() {
+        document.getElementById('gameTitle').innerText = "오늘의 게임: 의사결정 매트릭스";
+        const gameArea = document.getElementById('gameArea');
+        const scenarios = [
+            { q: "'빠른 성공'이 목표일 때, 어떤 프로젝트를 선택해야 할까요?", choices: ["A: 높은 수익, 낮은 노력, 중간 위험", "B: 중간 수익, 낮은 노력, 낮은 위험", "C: 매우 높은 수익, 높은 노력, 높은 위험"], correct: 1 },
+            { q: "'안정성'이 최우선일 때, 어떤 투자를 선택해야 할까요?", choices: ["A: 고위험 고수익 주식", "B: 안정적인 채권", "C: 중위험 중수익 펀드"], correct: 1 }
+        ];
+        const scenario = scenarios[Math.floor(currentRandFn() * scenarios.length)];
+        currentCorrectAnswer = scenario.correct;
+        gameArea.innerHTML = `
+            <div class="game-display question">${scenario.q}</div>
+            <div class="choices">
+                ${scenario.choices.map((choice, index) => `<button class="choice-btn" data-index="${index}">${choice}</button>`).join('')}
+            </div>
+        `;
+        document.getElementById('game-input-area').innerHTML = '';
+        gameInProgress = true;
+    }
+
+    // Game 2: Strategic Quote Quiz
+    function setupStrategicQuoteQuiz() {
+        document.getElementById('gameTitle').innerText = "오늘의 게임: 전략 명언 퀴즈";
+        const gameArea = document.getElementById('gameArea');
+        const quotes = [
+            { q: "지피지기면 백전불태(知彼知己 百戰不殆) - 적을 알고 나를 알면, 백 번 싸워도 OOOO 않는다.", a: "위태롭지" },
+            { q: "전쟁에서 이기는 가장 좋은 방법은 OOO 않는 것이다.", a: "싸우지" }
+        ];
+        const quote = quotes[Math.floor(currentRandFn() * quotes.length)];
+        currentCorrectAnswer = quote.a.toUpperCase();
+        gameArea.innerHTML = `<div class="game-display question">"${quote.q}"</div>`;
+        document.getElementById('game-input-area').innerHTML = `
+            <div class="game-input">
+                <input type="text" id="userAnswer" placeholder="빈칸에 들어갈 말">
+                <button id="submitAnswer">제출</button>
+            </div>
+        `;
+        gameInProgress = true;
+    }
+
+    // Game 3: Resource Allocation
+    function setupResourceAllocationGame() {
+        document.getElementById('gameTitle').innerText = "오늘의 게임: 자원 분배";
+        const gameArea = document.getElementById('gameArea');
+        const scenarios = [
+            { q: "$100를 기술주(20% 확률로 5배 수익)에 투자할 때의 기대값은 얼마일까요?", a: 100 }, // 100 * 0.2 * 5 = 100
+            { q: "$100를 채권(100% 확률로 1.1배 수익)에 투자할 때의 기대값은 얼마일까요?", a: 110 } // 100 * 1 * 1.1 = 110
+        ];
+        const scenario = scenarios[Math.floor(currentRandFn() * scenarios.length)];
+        currentCorrectAnswer = scenario.a;
+        gameArea.innerHTML = `<div class="game-display question">${scenario.q}</div>`;
+        document.getElementById('game-input-area').innerHTML = `
+            <div class="game-input">
+                <input type="number" id="userAnswer" placeholder="기대값 입력">
+                <button id="submitAnswer">제출</button>
+            </div>
+        `;
+        gameInProgress = true;
+    }
+
+    // --- Game Dispatcher and Common Logic ---
+    const gameTypes = [
+        setupOptimizationPuzzle,
+        setupDecisionMatrixGame,
+        setupStrategicQuoteQuiz,
+        setupResourceAllocationGame
+    ];
+
+    function getDayOfWeekText(day) {
+        const messages = [
+            "한 주를 마무리하며, 다음 주 전략을 구상해 보세요.", // Sunday
+            "새로운 한 주, 효율적인 계획으로 시작해 보세요!", // Monday
+            "오늘은 당신의 결단력이 빛을 발하는 날입니다.", // Tuesday
+            "주 중반, 논리적인 사고로 문제를 해결해 보세요.", // Wednesday
+            "당신의 리더십을 시험해 볼 시간입니다.", // Thursday
+            "주말을 앞둔 금요일, 가볍게 두뇌를 훈련해 보세요.", // Friday
+            "여유로운 토요일, 새로운 도전을 즐겨보는 건 어떠신가요?", // Saturday
+        ];
+        return messages[day];
+    }
+
+    function showFeedback(isCorrect) {
+        const feedbackMessage = document.getElementById('feedbackMessage');
+        if (isCorrect) {
+            feedbackMessage.innerText = "정답입니다! 역시 ENTJ, 뛰어난 전략가시군요.";
+            feedbackMessage.className = "feedback-message correct";
+        } else {
+            feedbackMessage.innerText = "아쉽네요. 더 효율적인 방법은 없었을까요?";
+            feedbackMessage.className = "feedback-message incorrect";
+        }
+        gameInProgress = false;
+    }
+
+    function handleChoiceClick(event) {
+        if (!gameInProgress) return;
+        const selectedIndex = parseInt(event.target.getAttribute('data-index'));
+        showFeedback(selectedIndex === currentCorrectAnswer);
+        document.querySelectorAll('.choice-btn').forEach(btn => btn.disabled = true);
+    }
+
+    function handleAnswerSubmit() {
+        if (!gameInProgress) return;
+        const userAnswer = document.getElementById('userAnswer').value.trim().toUpperCase();
+        if (userAnswer == currentCorrectAnswer.toString().toUpperCase()) {
+            showFeedback(true);
+        } else {
+            showFeedback(false);
+        }
+        document.getElementById('submitAnswer').disabled = true;
+    }
+
+    function initDailyGame() {
+        const today = new Date();
+        const seed = getDailySeed();
+        currentRandFn = mulberry32(seed);
+        
+        const dayOfWeek = today.getDay();
+        document.getElementById('gameDescription').innerText = getDayOfWeekText(dayOfWeek);
+
+        const gameTypeIndex = Math.floor(currentRandFn() * gameTypes.length + dayOfWeek) % gameTypes.length;
+        gameTypes[gameTypeIndex]();
+
+        document.getElementById('feedbackMessage').innerText = '';
+        document.getElementById('feedbackMessage').className = "feedback-message";
+        
+        const currentGameFn = gameTypes[gameTypeIndex];
+        if (currentGameFn === setupDecisionMatrixGame) {
+            document.querySelectorAll('.choice-btn').forEach(btn => {
+                btn.addEventListener('click', handleChoiceClick);
+            });
+        } else {
+            document.getElementById('submitAnswer').addEventListener('click', handleAnswerSubmit);
+        }
+    }
+
+    window.onload = function() {
+        try {
+            initDailyGame();
+        } catch (e) {
+            console.error("오늘의 게임 생성 중 오류 발생:", e);
+            document.getElementById('gameDescription').innerText = "콘텐츠를 불러오는 데 실패했습니다. 페이지를 새로고침해 주세요.";
+        }
+    };
+    </script>
+</body>
+</html>
