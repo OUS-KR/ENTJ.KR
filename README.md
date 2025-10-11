@@ -5,10 +5,10 @@
 ### [사용자 등록](https://github.com/OUS-KR/ENTJ.KR/issues/new?template=01-user-register-by-issue.yml)
 
 - `ENTJ.KR/u/{사용자 아이디}` 주소 기반의 사용자 등록
-  - 사용자 예제: [ENTJ.KR/u/entj](https://entj.kr/u/entj)
+  - 사용자 예제: [ENTJ.KR/u/entj](https://entj.kr/u/entj), [ENTJ.KR/u/tests/](https://entj.kr/u/tests)
   - [사용자 등록 예제](https://github.com/OUS-KR/ENTJ.KR/issues/1)
 - `ENTJ.KR/@{사용자 아이디}` 형태의 짧은 주소 지원
-  - 사용자 예제: [ENTJ.KR/@entj](https://entj.kr/@entj)
+  - 사용자 예제: [ENTJ.KR/@entj](https://entj.kr/@entj), [ENTJ.KR/@tests](https://entj.kr/@tests)
 - 부적절한 아이디 (욕설, 관리자 등)는 제한되어 등록 시 삭제
 
 ### [사용자 단축주소 생성](https://github.com/OUS-KR/ENTJ.KR/issues/new?template=02-user-short-url-register-by-issue.yml)
