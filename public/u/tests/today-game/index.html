@@ -164,6 +164,85 @@
 
     // --- Game Implementations for ENTJ ---
 
+    // Game 0: Today's Strategy Simulation
+    function setupStrategySimulationGame() {
+        document.getElementById('gameTitle').innerText = "오늘의 게임: 전략 시뮬레이션";
+        const gameArea = document.getElementById('gameArea');
+        const scenarios = [
+            { q: "경쟁사가 신제품을 출시하여 시장 점유율이 하락하고 있습니다. 당신은 어떻게 대응하시겠습니까?", a: ["경쟁사 제품을 분석하고, 우리 제품의 강점을 부각하는 공격적인 마케팅 전략을 수립한다.", "신제품 개발에 착수하여 경쟁사보다 더 혁신적인 제품을 출시한다.", "시장 상황을 관망하며 장기적인 전략을 재검토한다."], correct: 0 },
+            { q: "팀 프로젝트가 예상보다 지연되고 있으며, 자원도 부족합니다. 어떻게 하시겠습니까?", a: ["핵심 목표를 재설정하고, 우선순위에 따라 자원을 재분배하여 효율성을 극대화한다.", "추가 자원을 요청하고, 팀원들에게 더 많은 노력을 요구한다.", "프로젝트를 일시 중단하고, 상황이 개선될 때까지 기다린다."], correct: 0 },
+            { q: "새로운 시장 진출을 고려 중입니다. 가장 먼저 어떤 정보를 분석하시겠습니까?", a: ["잠재 고객의 니즈와 시장 규모, 경쟁 환경을 철저히 분석한다.", "내부 역량을 평가하고, 성공 가능성이 높은 분야를 선정한다.", "기존 성공 사례를 참고하여 유사한 전략을 수립한다."], correct: 0 },
+            { q: "팀원 간의 갈등으로 업무 효율이 떨어지고 있습니다. 어떻게 해결하시겠습니까?", a: ["갈등의 원인을 파악하고, 명확한 목표와 역할 분담을 통해 팀워크를 재정비한다.", "개인적인 감정은 배제하고, 업무 성과를 기준으로 평가하여 책임을 묻는다.", "팀 빌딩 활동을 통해 분위기를 전환하고, 자연스럽게 갈등이 해소되도록 유도한다."], correct: 0 }
+        ];
+        const scenario = scenarios[Math.floor(currentRandFn() * scenarios.length)];
+        currentCorrectAnswer = scenario.correct;
+        gameArea.innerHTML = `
+            <div class="game-display question">${scenario.q}</div>
+            <div class="choices">
+                ${scenario.a.map((choice, index) => `<button class="choice-btn" data-index="${index}">${choice}</button>`).join('')}
+            </div>
+        `;
+        document.getElementById('game-input-area').innerHTML = '';
+        gameInProgress = true;
+    }
+
+    // --- Game Dispatcher and Common Logic ---
+    const gameTypes = [
+        setupStrategySimulationGame
+    ];
+
+    function getDayOfWeekText(day) {
+        const messages = [
+            "일요일의 마무리, 다음 한 주를 위한 전략을 구상해 보세요.", // Sunday
+            "새로운 한 주, 당신의 리더십으로 목표를 향해 나아가세요!", // Monday
+            "오늘은 당신의 날카로운 분석력이 필요한 날입니다.", // Tuesday
+            "주 중반, 효율적인 계획으로 생산성을 극대화해 보세요.", // Wednesday
+            "당신의 결단력이 팀을 성공으로 이끌 것입니다.", // Thursday
+            "주말을 앞둔 금요일, 다음 전략을 미리 세워보는 건 어떠신가요?", // Friday
+            "여유로운 토요일, 새로운 도전 과제를 찾아보세요.", // Saturday
+        ];
+        return messages[day];
+    }
+
+    function showFeedback(isCorrect, message) {
+        const feedbackMessage = document.getElementById('feedbackMessage');
+        if (isCorrect) {
+            feedbackMessage.innerText = message || "정답입니다! 역시 ENTJ, 탁월한 전략가시군요.";
+            feedbackMessage.className = "feedback-message correct";
+        } else {
+            feedbackMessage.innerText = message || "아쉽네요. 다른 전략적 대안은 없었을까요?";
+            feedbackMessage.className = "feedback-message incorrect";
+        }
+        gameInProgress = false;
+    }
+
+    function handleChoiceClick(event) {
+        if (!gameInProgress) return;
+        const selectedIndex = parseInt(event.target.getAttribute('data-index'));
+        showFeedback(selectedIndex === currentCorrectAnswer);
+        document.querySelectorAll('.choice-btn').forEach(btn => btn.disabled = true);
+    }
+
+    function initDailyGame() {
+        const today = new Date();
+        const seed = getDailySeed();
+        currentRandFn = mulberry32(seed);
+        
+        const dayOfWeek = today.getDay();
+        document.getElementById('gameDescription').innerText = getDayOfWeekText(dayOfWeek);
+
+        const gameTypeIndex = Math.floor(currentRandFn() * gameTypes.length + dayOfWeek) % gameTypes.length;
+        gameTypes[gameTypeIndex]();
+
+        document.getElementById('feedbackMessage').innerText = '';
+        document.getElementById('feedbackMessage').className = "feedback-message";
+        
+        // Add event listeners after creating the elements
+        document.querySelectorAll('.choice-btn').forEach(btn => {
+            btn.addEventListener('click', handleChoiceClick);
+        });
+    }
+
     // Game 0: Optimization Puzzle
     function setupOptimizationPuzzle() {
         document.getElementById('gameTitle').innerText = "오늘의 게임: 최적화 퍼즐";
