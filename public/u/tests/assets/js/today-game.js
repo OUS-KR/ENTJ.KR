@@ -220,14 +220,14 @@ const gameScenarios = {
 };
 
 const patrolOutcomes = [
-    { weight: 30, effect: (gs) => ({ changes: { order: gs.order + getRandomValue(5, 2) }, message: "영토 순찰을 통해 질서가 확립되었습니다." }) },
-    { weight: 20, effect: (gs) => ({ changes: { influence: gs.influence + getRandomValue(5, 2) }, message: "백성들의 지지를 확인하여 영향력이 상승했습니다." }) },
+    { weight: 30, effect: (gs) => { const v = getRandomValue(5, 2); return { changes: { order: gs.order + v }, message: `영토 순찰을 통해 질서가 ${v}만큼 확립되었습니다.` }; } },
+    { weight: 20, effect: (gs) => { const v = getRandomValue(5, 2); return { changes: { influence: gs.influence + v }, message: `백성들의 지지를 확인하여 영향력이 ${v}만큼 상승했습니다.` }; } },
 ];
 const meetOutcomes = [
-    { weight: 40, effect: (gs, sub) => { const loyaltyGain = getRandomValue(10, 5); const updated = gs.subordinates.map(s => s.id === sub.id ? { ...s, loyalty: Math.min(100, s.loyalty + loyaltyGain) } : s); return { changes: { subordinates: updated }, message: `${sub.name}와(과)의 면담으로 충성도가 상승했습니다.` }; } },
+    { weight: 40, effect: (gs, sub) => { const v = getRandomValue(10, 5); const updated = gs.subordinates.map(s => s.id === sub.id ? { ...s, loyalty: Math.min(100, s.loyalty + v) } : s); return { changes: { subordinates: updated }, message: `${sub.name}와(과)의 면담으로 충성도가 ${v}만큼 상승했습니다.` }; } },
 ];
 const decreeOutcomes = [
-    { weight: 30, effect: (gs) => ({ changes: { growth: gs.growth + getRandomValue(10, 3) }, message: "성장 중심의 칙령으로 제국이 발전합니다." }) },
+    { weight: 30, effect: (gs) => { const v = getRandomValue(10, 3); return { changes: { growth: gs.growth + v }, message: `성장 중심의 칙령으로 제국이 ${v}만큼 발전합니다.` }; } },
 ];
 
 const minigames = [
@@ -314,7 +314,8 @@ const gameActions = {
         const cost = { materials: 50, gold: 20 };
         if (gameState.resources.materials >= cost.materials && gameState.resources.gold >= cost.gold) {
             gameState.empireBuildings.treasury.built = true;
-            updateState({ growth: gameState.growth + 10, resources: { ...gameState.resources, materials: gameState.resources.materials - cost.materials, gold: gameState.resources.gold - cost.gold } }, `국고를 건설했습니다!`);
+            const growthGain = getRandomValue(10, 3);
+            updateState({ growth: gameState.growth + growthGain, resources: { ...gameState.resources, materials: gameState.resources.materials - cost.materials, gold: gameState.resources.gold - cost.gold } }, `국고를 건설했습니다! (+${growthGain} 성장)`);
         } else { updateState({}, "자원이 부족합니다."); }
     },
     build_barracks: () => {
@@ -322,7 +323,8 @@ const gameActions = {
         const cost = { materials: 30, manpower: 30 };
         if (gameState.resources.materials >= cost.materials && gameState.resources.manpower >= cost.manpower) {
             gameState.empireBuildings.barracks.built = true;
-            updateState({ order: gameState.order + 10, resources: { ...gameState.resources, materials: gameState.resources.materials - cost.materials, manpower: gameState.resources.manpower - cost.manpower } }, `병영을 건설했습니다!`);
+            const orderGain = getRandomValue(10, 3);
+            updateState({ order: gameState.order + orderGain, resources: { ...gameState.resources, materials: gameState.resources.materials - cost.materials, manpower: gameState.resources.manpower - cost.manpower } }, `병영을 건설했습니다! (+${orderGain} 질서)`);
         } else { updateState({}, "자원이 부족합니다."); }
     },
     maintain_building: (params) => {
@@ -350,8 +352,12 @@ const gameActions = {
         if (!spendActionPoint()) return;
         const rand = currentRandFn();
         if (rand < 0.2) {
-            updateState({ authority: gameState.authority + 10 }, `사냥 중 희귀한 동물을 잡아 권위가 상승했습니다!`);
-        } else { updateState({ energy: gameState.energy + 5 }, `사냥을 통해 활력을 얻었습니다.`); }
+            const authorityGain = getRandomValue(10, 3);
+            updateState({ authority: gameState.authority + authorityGain }, `사냥 중 희귀한 동물을 잡아 권위가 ${authorityGain}만큼 상승했습니다!`);
+        } else {
+            const growthGain = getRandomValue(5, 2);
+            updateState({ growth: gameState.growth + growthGain }, `사냥을 통해 제국의 성장 가능성을 ${growthGain}만큼 발견했습니다.`);
+        }
     },
     play_minigame: () => {
         if (!spendActionPoint()) return;
@@ -367,16 +373,16 @@ const gameActions = {
 function applyStatEffects() {
     let message = "";
     if (gameState.strategy >= 70) { message += "뛰어난 전략으로 제국이 안정됩니다. "; }
-    if (gameState.growth >= 70) { gameState.resources.gold += 5; message += "제국의 성장이 가속화되어 추가 금을 얻습니다. "; }
-    if (gameState.influence >= 70) { gameState.subordinates.forEach(s => s.loyalty = Math.min(100, s.loyalty + 2)); message += "당신의 영향력으로 참모들의 충성도가 상승합니다. "; }
-    if (gameState.authority < 30) { gameState.actionPoints -= 1; message += "권위가 하락하여 행동력이 감소합니다. "; }
+    if (gameState.growth >= 70) { const v = getRandomValue(5, 2); gameState.resources.gold += v; message += `제국의 성장이 가속화되어 추가 금을 ${v}만큼 얻습니다. "; }
+    if (gameState.influence >= 70) { const v = getRandomValue(2, 1); gameState.subordinates.forEach(s => s.loyalty = Math.min(100, s.loyalty + v)); message += `당신의 영향력으로 참모들의 충성도가 ${v}만큼 상승합니다. "; }
+    if (gameState.authority < 30) { gameState.actionPoints -= 1; message += "권위가 하락하여 행동력이 1 감소합니다. "; }
     if (gameState.order < 30) { Object.keys(gameState.empireBuildings).forEach(key => { if(gameState.empireBuildings[key].built) gameState.empireBuildings[key].durability -= 1; }); message += "질서가 무너져 건물들이 빠르게 노후화됩니다. "; }
     return message;
 }
 
 const weightedDailyEvents = [
-    { id: "rebellion", weight: 10, condition: () => gameState.order < 40, onTrigger: () => updateState({ order: gameState.order - 10, manpower: gameState.manpower - 10 }, "반란 조짐이 보여 질서가 하락하고 인력을 잃습니다.") },
-    { id: "plague", weight: 5, condition: () => true, onTrigger: () => updateState({ manpower: gameState.manpower - 15, growth: gameState.growth - 5 }, "역병이 돌아 인력이 크게 감소하고 성장이 둔화됩니다.") },
+    { id: "rebellion", weight: 10, condition: () => gameState.order < 40, onTrigger: () => { const v = getRandomValue(10, 3); updateState({ order: gameState.order - v, manpower: gameState.manpower - v }, `반란 조짐이 보여 질서와 인력이 ${v}만큼 감소합니다.`); } },
+    { id: "plague", weight: 5, condition: () => true, onTrigger: () => { const v = getRandomValue(15, 5); updateState({ manpower: gameState.manpower - v, growth: gameState.growth - 5 }, `역병이 돌아 인력이 ${v}만큼 감소하고 성장이 둔화됩니다.`); } },
 ];
 
 function processDailyEvents() {
@@ -401,9 +407,11 @@ function processDailyEvents() {
             if (chosenEvent.onTrigger) chosenEvent.onTrigger();
         }
     }
-    gameState.currentScenarioId = eventId;
-    updateGameDisplay(dailyMessage + (gameScenarios[eventId]?.text || ''));
-    renderChoices(gameScenarios[eventId]?.choices || []);
+    if (!gameScenarios[gameState.currentScenarioId]) { // If a game over happened, don't overwrite it
+        gameState.currentScenarioId = eventId;
+    }
+    updateGameDisplay(dailyMessage + (gameScenarios[gameState.currentScenarioId]?.text || ''));
+    renderChoices(gameScenarios[gameState.currentScenarioId]?.choices || []);
     saveGameState();
 }
 
