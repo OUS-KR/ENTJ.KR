@@ -145,7 +145,24 @@ function renderStats() {
 function renderChoices(choices) {
     const choicesDiv = document.getElementById('gameChoices');
     if (!choicesDiv) return;
-    choicesDiv.innerHTML = choices.map(choice => `<button class="choice-btn" data-action="${choice.action}" data-params='${JSON.stringify(choice.params || {})}'>${choice.text}</button>`).join('');
+    let dynamicChoices = [];
+    if (gameState.currentScenarioId === 'intro') {
+        dynamicChoices = gameScenarios.intro.choices;
+    } else if (gameState.currentScenarioId === 'action_building_management') {
+        dynamicChoices = gameScenarios.action_building_management.choices ? [...gameScenarios.action_building_management.choices] : [];
+        if (!gameState.empireBuildings.treasury.built) dynamicChoices.push({ text: "국고 건설 (자재 50, 금 20)", action: "build_treasury" });
+        if (!gameState.empireBuildings.barracks.built) dynamicChoices.push({ text: "병영 건설 (자재 30, 인력 30)", action: "build_barracks" });
+        Object.keys(gameState.empireBuildings).forEach(key => {
+            const building = gameState.empireBuildings[key];
+            if (building.built && building.durability < 100) {
+                dynamicChoices.push({ text: `${building.name} 보수 (자재 10, 금 10)`, action: "maintain_building", params: { building: key } });
+            }
+        });
+        dynamicChoices.push({ text: "취소", action: "return_to_intro" });
+    } else {
+        dynamicChoices = choices ? [...choices] : [];
+    }
+    choicesDiv.innerHTML = dynamicChoices.map(choice => `<button class="choice-btn" data-action="${choice.action}" data-params='${JSON.stringify(choice.params || {})}'>${choice.text}</button>`).join('');
     choicesDiv.querySelectorAll('.choice-btn').forEach(button => {
         button.addEventListener('click', () => {
             const action = button.dataset.action;
@@ -173,10 +190,33 @@ const gameScenarios = {
         { text: "영토 순찰", action: "patrol" },
         { text: "참모 면담", action: "meet_subordinates" },
         { text: "칙령 반포", action: "issue_decree" },
+        { text: "자원 징수", action: "show_resource_collection_options" },
+        { text: "제국 건물 관리", action: "show_building_management_options" },
+        { text: "통치자의 여가", action: "show_leisure_options" },
         { text: "오늘의 결단", action: "play_minigame" }
     ]},
+    "action_resource_collection": {
+        text: "어떤 자원을 징수하시겠습니까?",
+        choices: [
+            { text: "세금 징수", action: "collect_gold" },
+            { text: "징병", action: "recruit_manpower" },
+            { text: "자재 수집", action: "gather_materials" },
+            { text: "취소", action: "return_to_intro" }
+        ]
+    },
+    "action_building_management": { text: "어떤 건물을 관리하시겠습니까?", choices: [] },
+    "leisure_menu": {
+        text: "어떤 여가 활동을 하시겠습니까?",
+        choices: [
+            { text: "투자 (행동력 1 소모)", action: "make_investment" },
+            { text: "사냥 (행동력 1 소모)", action: "go_hunting" },
+            { text: "취소", action: "return_to_intro" }
+        ]
+    },
     "game_over_strategy": { text: "잘못된 전략으로 제국이 위기에 빠졌습니다. 당신의 통치는 끝났습니다.", choices: [], final: true },
-    // ... other scenarios
+    "game_over_order": { text: "질서가 무너져 제국이 혼란에 빠졌습니다. 당신의 통치는 끝났습니다.", choices: [], final: true },
+    "game_over_authority": { text: "권위를 모두 잃었습니다. 더 이상 당신의 명령을 따르는 이가 없습니다.", choices: [], final: true },
+    "game_over_resources": { text: "자원이 모두 고갈되어 제국이 파산했습니다.", choices: [], final: true },
 };
 
 const patrolOutcomes = [
@@ -251,6 +291,68 @@ const gameActions = {
         const result = decreeOutcomes[0].effect(gameState);
         updateState(result.changes, result.message);
     },
+    show_resource_collection_options: () => updateState({ currentScenarioId: 'action_resource_collection' }),
+    show_building_management_options: () => updateState({ currentScenarioId: 'action_building_management' }),
+    show_leisure_options: () => updateState({ currentScenarioId: 'leisure_menu' }),
+    collect_gold: () => {
+        if (!spendActionPoint()) return;
+        const goldGain = getRandomValue(10, 4);
+        updateState({ resources: { ...gameState.resources, gold: gameState.resources.gold + goldGain } }, `세금을 징수하여 금을 ${goldGain}만큼 확보했습니다.`);
+    },
+    recruit_manpower: () => {
+        if (!spendActionPoint()) return;
+        const manpowerGain = getRandomValue(10, 4);
+        updateState({ resources: { ...gameState.resources, manpower: gameState.resources.manpower + manpowerGain } }, `징병을 통해 인력을 ${manpowerGain}만큼 확보했습니다.`);
+    },
+    gather_materials: () => {
+        if (!spendActionPoint()) return;
+        const materialsGain = getRandomValue(10, 4);
+        updateState({ resources: { ...gameState.resources, materials: gameState.resources.materials + materialsGain } }, `자재를 ${materialsGain}만큼 수집했습니다.`);
+    },
+    build_treasury: () => {
+        if (!spendActionPoint()) return;
+        const cost = { materials: 50, gold: 20 };
+        if (gameState.resources.materials >= cost.materials && gameState.resources.gold >= cost.gold) {
+            gameState.empireBuildings.treasury.built = true;
+            updateState({ growth: gameState.growth + 10, resources: { ...gameState.resources, materials: gameState.resources.materials - cost.materials, gold: gameState.resources.gold - cost.gold } }, `국고를 건설했습니다!`);
+        } else { updateState({}, "자원이 부족합니다."); }
+    },
+    build_barracks: () => {
+        if (!spendActionPoint()) return;
+        const cost = { materials: 30, manpower: 30 };
+        if (gameState.resources.materials >= cost.materials && gameState.resources.manpower >= cost.manpower) {
+            gameState.empireBuildings.barracks.built = true;
+            updateState({ order: gameState.order + 10, resources: { ...gameState.resources, materials: gameState.resources.materials - cost.materials, manpower: gameState.resources.manpower - cost.manpower } }, `병영을 건설했습니다!`);
+        } else { updateState({}, "자원이 부족합니다."); }
+    },
+    maintain_building: (params) => {
+        if (!spendActionPoint()) return;
+        const buildingKey = params.building;
+        const cost = { materials: 10, gold: 10 };
+        if (gameState.resources.materials >= cost.materials && gameState.resources.gold >= cost.gold) {
+            gameState.empireBuildings[buildingKey].durability = 100;
+            updateState({ resources: { ...gameState.resources, materials: gameState.resources.materials - cost.materials, gold: gameState.resources.gold - cost.gold } }, `${gameState.empireBuildings[buildingKey].name} 건물을 보수했습니다.`);
+        } else { updateState({}, "자원이 부족합니다."); }
+    },
+    make_investment: () => {
+        if (!spendActionPoint()) return;
+        const investment = getRandomValue(10, 5);
+        if (gameState.resources.gold < investment) { updateState({}, "투자에 필요한 금이 부족합니다."); return; }
+        const rand = currentRandFn();
+        if (rand < 0.4) {
+            const returnGain = investment * 2;
+            updateState({ resources: { ...gameState.resources, gold: gameState.resources.gold + returnGain } }, `투자가 성공하여 금 ${returnGain}을 얻었습니다!`);
+        } else {
+            updateState({ resources: { ...gameState.resources, gold: gameState.resources.gold - investment } }, `투자가 실패하여 금 ${investment}을 잃었습니다.`);
+        }
+    },
+    go_hunting: () => {
+        if (!spendActionPoint()) return;
+        const rand = currentRandFn();
+        if (rand < 0.2) {
+            updateState({ authority: gameState.authority + 10 }, `사냥 중 희귀한 동물을 잡아 권위가 상승했습니다!`);
+        } else { updateState({ energy: gameState.energy + 5 }, `사냥을 통해 활력을 얻었습니다.`); }
+    },
     play_minigame: () => {
         if (!spendActionPoint()) return;
         const minigame = minigames[0];
@@ -265,16 +367,16 @@ const gameActions = {
 function applyStatEffects() {
     let message = "";
     if (gameState.strategy >= 70) { message += "뛰어난 전략으로 제국이 안정됩니다. "; }
-    if (gameState.growth >= 70) { message += "제국의 성장이 가속화됩니다. "; }
-    if (gameState.influence >= 70) { message += "당신의 영향력이 하늘을 찌릅니다. "; }
-    if (gameState.authority < 30) { message += "권위가 하락하여 명령이 잘 전달되지 않습니다. "; }
-    if (gameState.order < 30) { message += "질서가 무너져 제국이 혼란에 빠집니다. "; }
+    if (gameState.growth >= 70) { gameState.resources.gold += 5; message += "제국의 성장이 가속화되어 추가 금을 얻습니다. "; }
+    if (gameState.influence >= 70) { gameState.subordinates.forEach(s => s.loyalty = Math.min(100, s.loyalty + 2)); message += "당신의 영향력으로 참모들의 충성도가 상승합니다. "; }
+    if (gameState.authority < 30) { gameState.actionPoints -= 1; message += "권위가 하락하여 행동력이 감소합니다. "; }
+    if (gameState.order < 30) { Object.keys(gameState.empireBuildings).forEach(key => { if(gameState.empireBuildings[key].built) gameState.empireBuildings[key].durability -= 1; }); message += "질서가 무너져 건물들이 빠르게 노후화됩니다. "; }
     return message;
 }
 
 const weightedDailyEvents = [
-    { id: "rebellion", weight: 10, condition: () => gameState.order < 40, onTrigger: () => updateState({ order: gameState.order - 10 }, "반란 조짐이 보입니다. 질서가 하락합니다.") },
-    { id: "plague", weight: 5, condition: () => true, onTrigger: () => updateState({ manpower: gameState.manpower - 10 }, "역병이 돌아 인력이 감소했습니다.") },
+    { id: "rebellion", weight: 10, condition: () => gameState.order < 40, onTrigger: () => updateState({ order: gameState.order - 10, manpower: gameState.manpower - 10 }, "반란 조짐이 보여 질서가 하락하고 인력을 잃습니다.") },
+    { id: "plague", weight: 5, condition: () => true, onTrigger: () => updateState({ manpower: gameState.manpower - 15, growth: gameState.growth - 5 }, "역병이 돌아 인력이 크게 감소하고 성장이 둔화됩니다.") },
 ];
 
 function processDailyEvents() {
@@ -284,6 +386,9 @@ function processDailyEvents() {
     const statEffectMessage = applyStatEffects();
     let dailyMessage = "새로운 날이 밝았습니다. " + statEffectMessage;
     if (gameState.strategy <= 0) { gameState.currentScenarioId = "game_over_strategy"; }
+    else if (gameState.order <= 0) { gameState.currentScenarioId = "game_over_order"; }
+    else if (gameState.authority <= 0) { gameState.currentScenarioId = "game_over_authority"; }
+    else if (gameState.resources.gold <= 0 && gameState.day > 1) { gameState.currentScenarioId = "game_over_resources"; }
     let eventId = "intro";
     const possibleEvents = weightedDailyEvents.filter(event => !event.condition || event.condition());
     if (possibleEvents.length > 0) {
