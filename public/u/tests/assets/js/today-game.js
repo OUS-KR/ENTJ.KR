@@ -229,14 +229,17 @@ const patrolOutcomes = [
     { weight: 20, condition: () => true, effect: (gs) => { const v = getRandomValue(5, 2); return { changes: { influence: gs.influence + v }, message: `백성들의 지지를 확인하여 영향력이 상승했습니다. (+${v} 영향력)` }; } },
     { weight: 15, condition: () => true, effect: (gs) => { const v = getRandomValue(5, 2); return { changes: { resources: { ...gs.resources, manpower: gs.resources.manpower - v } }, message: `순찰 중 함정에 빠져 인력을 잃었습니다. (-${v} 인력)` }; } },
     { weight: 15, condition: () => true, effect: (gs) => { const v = getRandomValue(5, 2); return { changes: { strategy: gs.strategy - v }, message: `순찰 중 잘못된 보고를 받아 전략에 혼선이 생겼습니다. (-${v} 전략)` }; } },
+    { weight: 10, condition: (gs) => gs.resources.materials < 20, effect: (gs) => { const v = getRandomValue(10, 5); return { changes: { resources: { ...gs.resources, materials: gs.resources.materials + v } }, message: `순찰 중 쓸만한 자재를 발견했습니다. (+${v} 자재)` }; } },
 ];
 const meetOutcomes = [
     { weight: 40, condition: (gs, sub) => sub.loyalty < 80, effect: (gs, sub) => { const v = getRandomValue(10, 5); const updated = gs.subordinates.map(s => s.id === sub.id ? { ...s, loyalty: Math.min(100, s.loyalty + v) } : s); return { changes: { subordinates: updated }, message: `${sub.name}와(과)의 면담으로 충성도가 상승했습니다. (+${v} 충성도)` }; } },
     { weight: 30, condition: () => true, effect: (gs, sub) => { const v = getRandomValue(5, 2); return { changes: { strategy: gs.strategy + v }, message: `${sub.name}에게서 유용한 전략적 조언을 얻었습니다. (+${v} 전략)` }; } },
+    { weight: 20, condition: (gs, sub) => gs.authority < 40, effect: (gs, sub) => { const v = getRandomValue(10, 3); const updated = gs.subordinates.map(s => s.id === sub.id ? { ...s, loyalty: Math.max(0, s.loyalty - v) } : s); return { changes: { subordinates: updated }, message: `당신의 권위가 부족하여 ${sub.name}이(가) 불만을 표합니다. (-${v} 충성도)` }; } },
 ];
 const decreeOutcomes = [
     { weight: 40, condition: () => true, effect: (gs) => { const v = getRandomValue(10, 3); return { changes: { growth: gs.growth + v }, message: `성장 중심의 칙령으로 제국이 발전합니다. (+${v} 성장)` }; } },
     { weight: 30, condition: () => true, effect: (gs) => { const v = getRandomValue(10, 3); return { changes: { order: gs.order + v }, message: `질서 확립 칙령으로 제국이 안정됩니다. (+${v} 질서)` }; } },
+    { weight: 20, condition: (gs) => gs.influence < 40, effect: (gs) => { const v = getRandomValue(10, 4); return { changes: { influence: gs.influence - v }, message: `백성들이 당신의 칙령에 반발합니다. (-${v} 영향력)` }; } },
 ];
 
 const minigames = [
@@ -272,7 +275,7 @@ const minigames = [
 function calculateMinigameReward(minigameName, score) {
     let rewards = { strategy: 0, influence: 0, message: "" };
     if (score >= 100) { rewards.strategy = 15; rewards.influence = 10; rewards.message = `완벽한 결단력이었습니다! (+15 전략, +10 영향력)`; } 
-    else if (score >= 50) { rewards.strategy = 10; rewards.influence = 5; rewards.message = `훌륭한 결정이었습니다. (+10 전략, +5 영향력)`; }
+    else if (score >= 50) { rewards.strategy = 10; rewards.influence = 5; rewards.message = `훌륭한 결정이었습니다. (+10 전략, +5 영향력)`; } 
     else { rewards.strategy = 5; rewards.message = `결정을 내렸습니다. (+5 전략)`; }
     return rewards;
 }
