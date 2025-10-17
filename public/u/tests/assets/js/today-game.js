@@ -373,8 +373,8 @@ const gameActions = {
 function applyStatEffects() {
     let message = "";
     if (gameState.strategy >= 70) { message += "뛰어난 전략으로 제국이 안정됩니다. "; }
-    if (gameState.growth >= 70) { const v = getRandomValue(5, 2); gameState.resources.gold += v; message += `제국의 성장이 가속화되어 추가 금을 ${v}만큼 얻습니다. "; }
-    if (gameState.influence >= 70) { const v = getRandomValue(2, 1); gameState.subordinates.forEach(s => s.loyalty = Math.min(100, s.loyalty + v)); message += `당신의 영향력으로 참모들의 충성도가 ${v}만큼 상승합니다. "; }
+    if (gameState.growth >= 70) { const v = getRandomValue(5, 2); gameState.resources.gold += v; message += `제국의 성장이 가속화되어 추가 금을 ${v}만큼 얻습니다. `; }
+    if (gameState.influence >= 70) { const v = getRandomValue(2, 1); gameState.subordinates.forEach(s => s.loyalty = Math.min(100, s.loyalty + v)); message += `당신의 영향력으로 참모들의 충성도가 ${v}만큼 상승합니다. `; }
     if (gameState.authority < 30) { gameState.actionPoints -= 1; message += "권위가 하락하여 행동력이 1 감소합니다. "; }
     if (gameState.order < 30) { Object.keys(gameState.empireBuildings).forEach(key => { if(gameState.empireBuildings[key].built) gameState.empireBuildings[key].durability -= 1; }); message += "질서가 무너져 건물들이 빠르게 노후화됩니다. "; }
     return message;
